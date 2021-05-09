@@ -1,61 +1,70 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
 import pandas as pd
 import plotly.graph_objs as go
+from dash.dependencies import Input, Output
+from sklearn import preprocessing
+
+
+
 
 # Load CSV file from Datasets folder
-df1 = pd.read_csv('../Datasets/Olympic2016Rio.csv')
+dfBitcoin = pd.read_csv('../Datasets/coin_Bitcoin.csv')
+dfEthereum = pd.read_csv('../Datasets/coin_Ethereum.csv')
+dfCloses = pd.read_csv('../Datasets/coin_Closes.csv')
 
 app = dash.Dash()
 
 # Bar chart data
-barchart_df = df1
-barchart_df = barchart_df.sort_values(by=['Total'], ascending=[False]).head(20)
-data_barchart = [go.Bar(x=barchart_df['NOC'], y=barchart_df['Total'])]
+barchart_df = dfBitcoin
+barchart_df = barchart_df.sort_values(by=['Close'], ascending=[False]).head(20)
+data_barchart = [go.Bar(x=barchart_df['Date'], y=barchart_df['Close'])]
 
 # Stack bar chart data
-stackbarchart_df = df1.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
-stackbarchart_df = stackbarchart_df.sort_values(by=['Total'], ascending=[False]).head(20).reset_index()
-trace1_stackbarchart = go.Bar(x=stackbarchart_df['NOC'], y=stackbarchart_df['Bronze'], name='Bronze',
+stackbarchart_df = dfEthereum.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
+stackbarchart_df = stackbarchart_df.sort_values(by=['Close'], ascending=[False]).head(20).reset_index()
+trace1_stackbarchart = go.Bar(x=stackbarchart_df['Date'], y=stackbarchart_df['Low'], name='Low Price',
                               marker={'color': '#CD7F32'})
-trace2_stackbarchart = go.Bar(x=stackbarchart_df['NOC'], y=stackbarchart_df['Silver'], name='Silver',
+trace2_stackbarchart = go.Bar(x=stackbarchart_df['Date'], y=stackbarchart_df['High'], name='High Price',
                               marker={'color': '#9EA0A1'})
-trace3_stackbarchart = go.Bar(x=stackbarchart_df['NOC'], y=stackbarchart_df['Gold'], name='Gold',
+trace3_stackbarchart = go.Bar(x=stackbarchart_df['Date'], y=stackbarchart_df['Close'], name='Close Price',
                               marker={'color': '#FFD700'})
 data_stackbarchart = [trace1_stackbarchart, trace2_stackbarchart, trace3_stackbarchart]
 
 
 # Line Chart
-line_df = df1
-line_df['date'] = pd.to_datetime(line_df['date'])
-data_linechart = [go.Scatter(x=line_df['date'], y=line_df['actual_max_temp'], mode='lines', name='Temperature')]
+line_df = dfEthereum
+line_df['Date'] = pd.to_datetime(line_df['Date'])
+data_linechart = [go.Scatter(x=line_df['Date'], y=line_df['Close'], mode='lines', name='Close Prices')]
 
 # Multi Line Chart
-multiline_df = df1
-multiline_df['date'] = pd.to_datetime(multiline_df['date'])
-trace1_multiline = go.Scatter(x=multiline_df['date'], y=multiline_df['actual_min_temp'], mode='lines', name='Min Temp')
-trace2_multiline = go.Scatter(x=multiline_df['date'], y=multiline_df['actual_max_temp'], mode='lines', name='Max Temp')
-trace3_multiline = go.Scatter(x=multiline_df['date'], y=multiline_df['actual_mean_temp'], mode='lines', name='Mean Temp')
+multiline_df = dfEthereum
+multiline_df['Date'] = pd.to_datetime(multiline_df['Date'])
+trace1_multiline = go.Scatter(x=multiline_df['Date'], y=multiline_df['Low'], mode='lines', name='Low Price')
+trace2_multiline = go.Scatter(x=multiline_df['Date'], y=multiline_df['High'], mode='lines', name='High Price')
+trace3_multiline = go.Scatter(x=multiline_df['Date'], y=multiline_df['Close'], mode='lines', name='Close Price')
 data_multiline = [trace1_multiline, trace2_multiline, trace3_multiline]
 
-# Bubble chart
-bubble_df = df1.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
-
-data_bubblechart = [
-    go.Scatter(x=bubble_df['average_min_temp'],
-               y=bubble_df['average_max_temp'],
-               text=bubble_df['date'],
-               mode='markers',
-               marker=dict(size=bubble_df['average_max_temp'] / 200, color=bubble_df['average_max_temp'] / 200, showscale=True))
-]
-
 # Heatmap
-data_heatmap = [go.Heatmap(x=df1['day'],
-                           y=df1['month'],
-                           z=df1['record_max_temp'].values.tolist(),
+data_heatmap = [go.Heatmap(x=dfEthereum['Date'],
+                           y=dfEthereum['Volume'],
+                           z=dfEthereum['Close'].values.tolist(),
                            colorscale='Jet')]
+
+#Scaled Line graph on a 1 to 0 scale
+#Eth = pd.read_csv('../Datasets/coin_Ethereum.csv', index_col=['Date'])
+#Bit = pd.read_csv('../Datasets/coin_Bitcoin.csv', index_col=['Date'])
+#main_data = pd.DataFrame({'Ethereum' : Eth['Close'],
+                          #'Bitcoin' : Bit['Close']})
+#min_max_scaler = preprocessing.MinMaxScaler()
+#norm_data = pd.DataFrame(min_max_scaler.fit_transform(main_data), columns=main_data.columns, index=main_data.index)
+#norm_data['Date'] = pd.to_datetime(norm_data['Date'])
+#trace1_scaledline = go.Scatter(x=multiline_df['Date'], y=multiline_df['Ethereum'], mode='lines', name='Ethereum')
+#trace2_scaledline = go.Scatter(x=multiline_df['Date'], y=multiline_df['BitCoin'], mode='lines', name='Bitcoin')
+#data_scaledline = [trace1_scaledline, trace2_scaledline]
+
+
 
 # Layout
 app.layout = html.Div(children=[
@@ -66,107 +75,104 @@ app.layout = html.Div(children=[
             }
             ),
     html.Div('Web dashboard for Data Visualization using Python', style={'textAlign': 'center'}),
-    html.Div('Total Number of Medals for each Country at the 2016 Rio Olympic Games', style={'textAlign': 'center'}),
+    html.Div('Close values for different types of crypto currencies', style={'textAlign': 'center'}),
     html.Br(),
     html.Br(),
     html.Hr(style={'color': '#7FDBFF'}),
-    html.H3('Interactive Bar chart', style={'color': '#df1e56'}),
-    html.Div('This bar chart represent the number of medals won from the country of selected continent.'),
+    html.H3('Interactive Line Graph', style={'color': '#df1e56'}),
+    html.Div('This line graph represent the price of each currency when the market closed for that day.'),
     dcc.Graph(id='graph1'),
-    html.Div('Please select a continent', style={'color': '#ef3e18', 'margin':'10px'}),
+    html.Div('Please select a Currency', style={'color': '#ef3e18', 'margin':'10px'}),
     dcc.Dropdown(
-        id='select-continent',
+        id='select-currency',
         options=[
-            {'label': 'Asia', 'value': 'Asia'},
-            {'label': 'Africa', 'value': 'Africa'},
-            {'label': 'Europe', 'value': 'Europe'},
-            {'label': 'North America', 'value': 'North America'},
-            {'label': 'Oceania', 'value': 'Oceania'},
-            {'label': 'South America', 'value': 'South America'}
+            {'label': 'Bitcoin', 'value': 'Bitcoin'},
+            {'label': 'Ethereum', 'value': 'Ethereum'},
         ],
-        value='Europe'
+        value='Bitcoin'
     ),
     html.Br(),
     html.Hr(style={'color': '#7FDBFF'}),
     html.H3('Bar chart', style={'color': '#df1e56'}),
-    html.Div('This bar chart represent the number of total Olympic Medals by Country in the 2016 Rio Olympics.'),
+    html.Div('This Bar chart represent the price of Bitcoin at close value'),
     dcc.Graph(id='graph2',
               figure={
                   'data': data_barchart,
-                  'layout': go.Layout(title='Number of total Olympic Medals by Country in the 2016 Rio Olympics',
-                                      xaxis={'title': 'States'}, yaxis={'title': 'Number of total Olympic Medals'})
+                  'layout': go.Layout(title='Price of Bitcoin at close value',
+                                      xaxis={'title': 'Date'}, yaxis={'title': 'Close Prices'})
               }
               ),
     html.Hr(style={'color': '#7FDBFF'}),
     html.H3('Stack bar chart', style={'color': '#df1e56'}),
     html.Div(
-        'This stack bar chart represents the Olympic Medals by grade by Countries in the 2016 Rio Olympic Games.'),
+        'This stack bar chart represents the Low, High, and Close Prices of Bitcoin.'),
     dcc.Graph(id='graph3',
               figure={
                   'data': data_stackbarchart,
-                  'layout': go.Layout(title='Olympic Medals by grade by Countries in the 2016 Rio Olympic Games',
-                                      xaxis={'title': 'Country'}, yaxis={'title': 'Number of Olympic Medals'},
+                  'layout': go.Layout(title='The Low, High, and Close Prices of Bitcoin',
+                                      xaxis={'title': 'Date'}, yaxis={'title': 'Values'},
                                       barmode='stack')
               }
               ),
     html.Hr(style={'color': '#7FDBFF'}),
     html.H3('Line chart', style={'color': '#df1e56'}),
-    html.Div('This line chart represent the Max Temperatures for the months of the years 2014-2015.'),
+    html.Div('This line chart represents the change in the closing value of Ethereum.'),
     dcc.Graph(id='graph4',
               figure={
                   'data': data_linechart,
-                  'layout': go.Layout(title='Max Temperatures for the months of the years 2014-2015',
-                                      xaxis={'title': 'Month'}, yaxis={'title': 'Temperature'})
+                  'layout': go.Layout(title='Change in the closing value of Ethereum',
+                                      xaxis={'title': 'Date'}, yaxis={'title': 'Closing Value'})
               }
               ),
     html.Hr(style={'color': '#7FDBFF'}),
     html.H3('Multi Line chart', style={'color': '#df1e56'}),
     html.Div(
-        'This line chart represent the Min, Max, and Mean Temperatures for the months of the years 2014-2015.'),
+        'This line chart represent the Low, High, and Closing prices for Ethereum.'),
     dcc.Graph(id='graph5',
               figure={
                   'data': data_multiline,
                   'layout': go.Layout(
-                      title='Min, Max, and Mean Temperatures for the months of the years 2014-2015',
-                      xaxis={'title': 'Date'}, yaxis={'title': 'Temperatures'})
-              }
-              ),
-    html.Hr(style={'color': '#7FDBFF'}),
-    html.H3('Bubble chart', style={'color': '#df1e56'}),
-    html.Div(
-        'This bubble chart represent the Mean Temperatures for the months of the years 2014-2015.'),
-    dcc.Graph(id='graph6',
-              figure={
-                  'data': data_bubblechart,
-                  'layout': go.Layout(title='Mean Temperatures for the months of the years 2014-2015',
-                                      xaxis={'title': 'Months'}, yaxis={'title': 'Temperatures'},
-                                      hovermode='closest')
+                      title='Low, High, and Closing prices for Ethereum',
+                      xaxis={'title': 'Date'}, yaxis={'title': 'Values'})
               }
               ),
     html.Hr(style={'color': '#7FDBFF'}),
     html.H3('Heat map', style={'color': '#df1e56'}),
     html.Div(
-        'This heat map represent the Recorded Max temps of the years 2014-2015.'),
-    dcc.Graph(id='graph7',
+        'This heat map represents the Closing values based on the date and volume of Ethereum.'),
+    dcc.Graph(id='graph6',
               figure={
                   'data': data_heatmap,
-                  'layout': go.Layout(title='Recorded Max temps of the years 2014-2015',
-                                      xaxis={'title': 'Day of Week'}, yaxis={'title': 'Month of Year'})
+                  'layout': go.Layout(title='Closing values based on the date and volume of Ethereum',
+                                      xaxis={'title': 'Date'}, yaxis={'title': 'Volume'})
               }
-              )
+              ),
+    html.Hr(style={'color': '#7FDBFF'}),
+        html.H3('Scaled Multi Line chart', style={'color': '#df1e56'}),
+        html.Div(
+            'This scaled line chart represent the Closing prices of Bitcoin and Ethereum on a 0 to 1 scale.'),
+        dcc.Graph(id='graph7',
+                  figure={
+                      'data': data_multiline,
+                      'layout': go.Layout(
+                          title='Closing prices of Bitcoin and Ethereum on a 0 to 1 scale',
+                          xaxis={'title': 'Date'}, yaxis={'title': 'Values'})
+                  }
+                  )
 ])
 
 
 @app.callback(Output('graph1', 'figure'),
-              [Input('select-continent', 'value')])
-def update_figure(selected_continent):
+              [Input('select-currency', 'value')])
+def update_figure(selected_currency):
+    filtered_df = dfCloses[dfCloses['Name'] == selected_currency]
 
-    new_df = filtered_df.groupby(['NOC'])['Total'].sum().reset_index()
-    new_df = new_df.sort_values(by=['Total'], ascending=[False]).head(20)
-    data_interactive_barchart = [go.Bar(x=new_df['NOC'], y=new_df['Total'])]
-    return {'data': data_interactive_barchart, 'layout': go.Layout(title='Total Number of Medals in the 2016 Rio Olympic Games by Country  '+selected_continent,
-                                                                   xaxis={'title': 'Country'},
-                                                                   yaxis={'title': 'Number of Total Medals'})}
+    new_df = filtered_df.groupby(['Date'])['Close'].sum().reset_index()
+    new_df['Date'] = pd.to_datetime(new_df['Date'])
+    data_interactive_linegraph = [go.Scatter(x=new_df['Date'], y=new_df['Close'], mode='lines', name='Close Prices')]
+    return {'data': data_interactive_linegraph, 'layout': go.Layout(title='Close values for different types of crypto currencies   '+selected_currency,
+                                                                   xaxis={'title': 'Date'},
+                                                                   yaxis={'title': 'Close Values'})}
 
 
 if __name__ == '__main__':
